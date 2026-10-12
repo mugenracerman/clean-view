@@ -4,6 +4,10 @@ A Claude Code mod that makes Claude Code calm and friendly for people who aren't
 
 While Claude works, tool calls, file diffs and command output are hidden. Instead, a progress box sits above the prompt so you can always see the plan, what's happening now and how far along it is:
 
+![The Clean View progress box in Claude Code: the job's name, "Step 3 of 4" with an overall bar at 50%, two finished steps, the current step working, and one step next](docs/progress-box.png)
+
+The same box, drawn in text:
+
 ```
 ╭──────────────────────────────────────────────────────────────╮
 │ ✳ Build my landing page                               1m 12s │
