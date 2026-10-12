@@ -29,6 +29,11 @@ const COLLAPSE_MS = 5000
 const FAILS_BEFORE_STUCK = 3
 const LABEL_CELLS = 7
 
+// The footer toggle's colours, the same as Prompt Upgrade's and Auto Model's.
+const LINE = '#262B33'
+const MUTED = '#7D8590'
+const TEXT = '#E6EDF3'
+
 const ALWAYS_ALLOWED = new Set([
   'ToolSearch',
   'TodoWrite',
@@ -214,6 +219,39 @@ export function registerCleanView(on: On): void {
     $.ui.toast(toastFor(want))
     await keepTicking(io)
     return { text: want ? 'Clean View is on.' : 'Clean View is off. Everything is visible again.' }
+  })
+
+  // A toggle in the prompt footer, left of the other mods' toggles and the
+  // engine's mode labels (all drawn by `next`); a click flips Clean View.
+  on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const isOn = await read($, enabled)
+    const label = `Clean View: ${isOn ? 'On' : 'Off'}`
+    const flip = async () => {
+      const io: IO = {
+        write: fn => update($, checklist, fn),
+        isLive: async () => (await read($, enabled)) && isLive(await read($, checklist)),
+        every: (ms, fn) => $.clock.every(ms, fn),
+        bump: () => update($, tick, n => n + 1),
+      }
+      const value = await update($, enabled, one => !one)
+      await $.store.set(STORE_KEY, value)
+      $.ui.toast(toastFor(value))
+      await keepTicking(io)
+    }
+    const theirs = await next(e).catch(() => null)
+    return (
+      <Box flexDirection="row" columnGap={1}>
+        {e.surface === 'terminal' ? (
+          <Button key="clean-view-toggle" plain onPress={flip}>
+            <Text backgroundColor={LINE} color={isOn ? TEXT : MUTED}>{` ${label} `}</Text>
+          </Button>
+        ) : (
+          <Button key="clean-view-toggle" label={label} plain onPress={flip} />
+        )}
+        {theirs}
+      </Box>
+    )
   })
 
   // While Clean View is on, every request gets a plain-English plan first.
@@ -444,51 +482,21 @@ export function registerCleanView(on: On): void {
     return next({ ...e, props: { ...e.props, hint: '' } })
   })
 
-  // The checklist band and the button.
+  // The checklist band; the on/off toggle lives in the prompt footer.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.props.hasSurvey) return next(e)
 
-    const { Box, Text, Button } = $.ui.resolve(e)
     const isOn = await read($, enabled)
     const list = isOn ? await read($, checklist) : null
-    const frame = list?.phase === 'working' ? await read($, tick) : 0
-    const now = list === null ? 0 : await $.clock.now()
+    // Nothing to show: leave the band to whatever else draws there.
+    if (list === null) return next(e)
+
+    const { Box, Text } = $.ui.resolve(e)
+    const frame = list.phase === 'working' ? await read($, tick) : 0
+    const now = await $.clock.now()
     // Whatever else draws in the band (other mods) stays beneath ours.
     const below = await next(e).catch(() => null)
-
     const width = Math.max(24, e.props.bodyColumns)
-    const label = isOn ? '● Clean View: ON' : '○ Clean View: OFF'
-    const headWidth = Math.max(4, width - (label.length + 4) - 1)
-    const toggle = async () => {
-      const value = !(await read($, enabled))
-      await $.state.set({ plugin: 'clean-view', key: 'cleanViewEnabled' }, value)
-      await $.store.set(STORE_KEY, value)
-      $.ui.toast(toastFor(value))
-      if (value && ticker === undefined && isLive(await read($, checklist))) {
-        ticker = $.clock.every(TICK_MS, () => {
-          void (async () => {
-            if (!(await read($, enabled)) || !isLive(await read($, checklist))) {
-              ticker?.cancel()
-              ticker = undefined
-              return
-            }
-            await update($, tick, n => n + 1)
-          })()
-        })
-      }
-    }
-    const button = <Button key="toggle" label={label} onPress={toggle} />
-
-    if (list === null) {
-      return (
-        <Box flexDirection="column" width={width}>
-          <Box flexDirection="row" justifyContent="flex-end" width={width}>
-            {button}
-          </Box>
-          {below}
-        </Box>
-      )
-    }
 
     const header = (() => {
       switch (list.phase) {
@@ -574,10 +582,7 @@ export function registerCleanView(on: On): void {
     const showRows = !(list.phase === 'done' && list.isCollapsed)
     return (
       <Box flexDirection="column" width={width}>
-        <Box flexDirection="row" justifyContent="space-between" width={width}>
-          <Box width={headWidth}>{header}</Box>
-          {button}
-        </Box>
+        <Box width={width}>{header}</Box>
         {showRows && list.tasks.map(row)}
         {below}
       </Box>

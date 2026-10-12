@@ -5,7 +5,7 @@ A Claude Code mod that makes Claude Code calm and friendly for people who aren't
 While Claude works, tool calls, file diffs and command output are hidden. Instead, one simple checklist sits above the prompt so you can always see the plan, what's happening now and how far along it is:
 
 ```
-Build my landing page · 1m 12s                     [ ● Clean View: ON ]
+Build my landing page · 1m 12s
 ✓ Read your brand notes            ██████████  Done
 ▶ Build the pricing section        ██████░░░░  60%
 ○ Add the contact form             ░░░░░░░░░░  Next
@@ -26,7 +26,7 @@ Answer `y` to add the marketplace, then press Enter to install it for your user.
 
 ## Turn it on and off
 
-- Click the `[ ● Clean View: ON ]` button above the prompt, or
+- Click the ` Clean View: On ` toggle in the footer under the prompt, or
 - type `/simple on`, `/simple off`, or just `/simple` to flip it.
 
 Your choice is remembered after a restart. When it's off, every hidden row comes back.

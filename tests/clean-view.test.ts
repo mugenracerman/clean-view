@@ -19,6 +19,8 @@ const BAND = {
   },
 } as const
 
+const FOOTER = { plugin: 'clean-view', component: 'SessionMode', props: { modes: [] } } as const
+
 const SESSION = { cwd: '.', surface: 'terminal', isInteractive: true } as const
 
 /** What a session answers beneath the plugin: its start, and the tool and command it registers. */
@@ -29,6 +31,9 @@ function session(on: On, stored: Record<string, unknown> = {}) {
   on('command.register', ($, e) => ({ value: { command: e.name } }))
   on('ui.toast', () => ({ value: undefined }))
   on('classic.Notification', () => ({}))
+  // What the engine and other mods draw beneath ours: nothing.
+  on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', props: {}, children: [] }))
+  on('ui.render', { component: 'SessionMode' }, () => ({ type: 'Box', props: {}, children: [] }))
   return mock.clock(on, { now: 1_000_000 })
 }
 
@@ -70,8 +75,11 @@ describe('the checklist band', () => {
       expect(await ui.find({ type: 'Text', text: /^▶ Build the pricing section\s+█{6}░{4}\s+60%$/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /^○ Add the contact form\s+░{10}\s+Next$/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /^○ Polish the footer\s+░{10}\s+Up next$/ })).toBeDefined()
-      expect((await ui.find({ key: 'toggle' }))?.props.label).toBe('● Clean View: ON')
       await ui.unmount()
+
+      const footer = await $.ui.mount({ ...FOOTER, surface })
+      expect(await footer.find({ text: /Clean View: On/ })).toBeDefined()
+      await footer.unmount()
     }
   })
 
@@ -94,7 +102,7 @@ describe('the checklist band', () => {
     }
   })
 
-  test('4. /simple off hides the band but keeps the button, and remembers it', async ($, on) => {
+  test('4. /simple off hides the band and the footer toggle says Off', async ($, on) => {
     session(on)
     await $.session.start(SESSION)
     await $.tool.call({ tool: PLAN, steps: ['Read your brand notes', 'Build the pricing section'] })
@@ -123,8 +131,11 @@ describe('the checklist band', () => {
     for (const surface of ['terminal', 'desktop'] as const) {
       const ui = await $.ui.mount({ ...BAND, surface })
       expect(await ui.find({ type: 'Text', text: /Read your brand notes/ })).toBeUndefined()
-      expect((await ui.find({ key: 'toggle' }))?.props.label).toBe('○ Clean View: OFF')
       await ui.unmount()
+
+      const footer = await $.ui.mount({ ...FOOTER, surface })
+      expect(await footer.find({ text: /Clean View: Off/ })).toBeDefined()
+      await footer.unmount()
     }
 
     await $.command.run({
@@ -133,8 +144,8 @@ describe('the checklist band', () => {
       origin: { kind: 'composer' },
       presentation: { isFullscreen: false, columns: 100 },
     })
-    const back = await $.ui.mount({ ...BAND, surface: 'terminal' })
-    expect((await back.find({ key: 'toggle' }))?.props.label).toBe('● Clean View: ON')
+    const back = await $.ui.mount({ ...FOOTER, surface: 'terminal' })
+    expect(await back.find({ text: /Clean View: On/ })).toBeDefined()
     await back.unmount()
   })
 
@@ -143,13 +154,27 @@ describe('the checklist band', () => {
     await $.session.start(SESSION)
     await $.tool.call({ tool: PLAN, steps: ['Read your brand notes', 'Build the pricing section'] })
 
-    const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-    expect((await ui.find({ key: 'toggle' }))?.props.label).toBe('○ Clean View: OFF')
-    expect(await ui.find({ type: 'Text', text: /Read your brand notes/ })).toBeUndefined()
-    await ui.press({ key: 'toggle' })
-    expect((await ui.find({ key: 'toggle' }))?.props.label).toBe('● Clean View: ON')
-    expect(await ui.find({ type: 'Text', text: /Read your brand notes/ })).toBeDefined()
-    await ui.unmount()
+    const band = await $.ui.mount({ ...BAND, surface: 'terminal' })
+    expect(await band.find({ type: 'Text', text: /Read your brand notes/ })).toBeUndefined()
+    await band.unmount()
+
+    const terminal = await $.ui.mount({ ...FOOTER, surface: 'terminal' })
+    expect(await terminal.find({ text: /Clean View: Off/ })).toBeDefined()
+    await terminal.press({ key: 'clean-view-toggle' })
+    expect(await terminal.find({ text: /Clean View: On/ })).toBeDefined()
+    await terminal.unmount()
+
+    const desktop = await $.ui.mount({ ...FOOTER, surface: 'desktop' })
+    expect(await desktop.find({ text: /Clean View: On/ })).toBeDefined()
+    await desktop.press({ key: 'clean-view-toggle' })
+    expect(await desktop.find({ text: /Clean View: Off/ })).toBeDefined()
+    await desktop.press({ key: 'clean-view-toggle' })
+    expect(await desktop.find({ text: /Clean View: On/ })).toBeDefined()
+    await desktop.unmount()
+
+    const after = await $.ui.mount({ ...BAND, surface: 'terminal' })
+    expect(await after.find({ type: 'Text', text: /Read your brand notes/ })).toBeDefined()
+    await after.unmount()
   })
 })
 
