@@ -23,6 +23,26 @@ import {
 
 type Checklist = CleanViewChecklist | null
 
+// Damon's Tools (it registers /damons-tools) shows every plugin's switch in its
+// own dashboard and keeps the footer to one button; while it is installed this
+// plugin leaves its footer toggle out. Looked up at most every few seconds.
+let dashboardSeen: { at: number; isThere: boolean } | undefined
+async function hasDashboard($: {
+  clock: { now: () => Promise<number> }
+  command: { list: () => Promise<readonly { name: string }[]> }
+}): Promise<boolean> {
+  // Where the lookup cannot run, keep the toggle.
+  try {
+    const now = await $.clock.now()
+    if (dashboardSeen && now - dashboardSeen.at < 5000) return dashboardSeen.isThere
+    const isThere = (await $.command.list()).some(c => c.name === 'damons-tools')
+    dashboardSeen = { at: now, isThere }
+    return isThere
+  } catch {
+    return false
+  }
+}
+
 export const PLAN_TOOL = 'mcp__clean-view__plan_steps'
 export const PROGRESS_TOOL = 'mcp__clean-view__report_progress'
 
@@ -240,6 +260,7 @@ export function registerCleanView(on: On): void {
   // A toggle in the prompt footer, left of the other mods' toggles and the
   // engine's mode labels (all drawn by `next`); a click flips Clean View.
   on('ui.render', { component: 'SessionMode' }, async ($, e, next) => {
+    if (await hasDashboard($)) return next(e)
     const { Box, Button, Text } = $.ui.resolve(e)
     const isOn = await read($, enabled)
     const label = `Clean View: ${isOn ? 'On' : 'Off'}`
