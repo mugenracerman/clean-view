@@ -1,0 +1,5 @@
+{
+  "name": "clean-view",
+  "owner": { "name": "mugenracerman" },
+  "plugins": [{ "name": "clean-view", "source": "./" }]
+}
