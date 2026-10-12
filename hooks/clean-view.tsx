@@ -510,7 +510,8 @@ export function registerCleanView(on: On): void {
     const { Box, Text } = $.ui.resolve(e)
     const frame = list.phase === 'working' ? await read($, tick) : 0
     const now = await $.clock.now()
-    // Whatever else draws in the band (other mods) stays beneath ours.
+    // Whatever else draws in the band (other mods) stays beneath ours. The engine
+    // refuses its own drawing under a Box with a width, so the outer Box has none.
     const below = await next(e).catch(() => null)
     const width = Math.max(24, e.props.bodyColumns)
 
@@ -580,7 +581,7 @@ export function registerCleanView(on: On): void {
     // Finished and five seconds old: one line.
     if (list.phase === 'done' && list.isCollapsed) {
       return (
-        <Box flexDirection="column" width={width}>
+        <Box flexDirection="column">
           <Box paddingX={2} width={width}>
             {header}
           </Box>
@@ -649,7 +650,7 @@ export function registerCleanView(on: On): void {
     }
 
     return (
-      <Box flexDirection="column" width={width}>
+      <Box flexDirection="column">
         <Box flexDirection="column" borderStyle="round" borderColor={FRAME[list.phase]} paddingX={1} width={width}>
           {header}
           {overall}

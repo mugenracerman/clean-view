@@ -31,9 +31,9 @@ function session(on: On, stored: Record<string, unknown> = {}) {
   on('command.register', ($, e) => ({ value: { command: e.name } }))
   on('ui.toast', () => ({ value: undefined }))
   on('classic.Notification', () => ({}))
-  // What the engine and other mods draw beneath ours: nothing.
-  on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'Box', props: {}, children: [] }))
-  on('ui.render', { component: 'SessionMode' }, () => ({ type: 'Box', props: {}, children: [] }))
+  // What the engine draws beneath ours: its own drawing, as in a real session.
+  on('ui.render', { component: 'AbovePrompt' }, () => ({ type: 'engine', ref: 0 }))
+  on('ui.render', { component: 'SessionMode' }, () => ({ type: 'engine', ref: 0 }))
   return mock.clock(on, { now: 1_000_000 })
 }
 
