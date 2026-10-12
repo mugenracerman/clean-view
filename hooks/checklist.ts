@@ -231,3 +231,39 @@ export function errorSentence(kind: string | null, details: string | null): stri
       return 'something went wrong, try again in a moment'
   }
 }
+
+/** Which of the 10 meter cells are lit: filled to `percent`, or a 3-cell sweep at frame `sweep`. */
+export function meterCells(percent: number, sweep?: number): boolean[] {
+  const cells: boolean[] = []
+  if (sweep !== undefined) {
+    const at = sweep % METER_CELLS
+    for (let i = 0; i < METER_CELLS; i++) cells.push((i - at + METER_CELLS) % METER_CELLS < 3)
+    return cells
+  }
+  const filled = Math.round(clampPercent(percent) / 10)
+  for (let i = 0; i < METER_CELLS; i++) cells.push(i < filled)
+  return cells
+}
+
+/** The whole job's progress: each step counts the same, the current one by its percent. */
+export function overallPercent(tasks: readonly CleanViewTask[]): number {
+  if (tasks.length === 0) return 0
+  const sum = tasks.reduce((n, t) => n + (t.status === 'done' ? 100 : t.status === 'active' ? t.percent : 0), 0)
+  return Math.round(sum / tasks.length)
+}
+
+/** "Step 2 of 4": the current step, or the last one finished. */
+export function stepLabel(tasks: readonly CleanViewTask[]): string {
+  const active = tasks.findIndex(t => t.status === 'active')
+  const at = active === -1 ? tasks.filter(t => t.status === 'done').length : active + 1
+  return `Step ${Math.max(1, at)} of ${Math.max(1, tasks.length)}`
+}
+
+const TITLE_STOPS = ['#F2994A', '#F06292', '#C86DD7', '#8E7CF0', '#6FA8FF'] as const
+
+/** The colour of word `i` of `n` in the title's orange-to-blue fade. */
+export function titleColor(i: number, n: number): string {
+  if (n <= 1) return TITLE_STOPS[0]
+  const at = Math.round((i / (n - 1)) * (TITLE_STOPS.length - 1))
+  return TITLE_STOPS[Math.min(TITLE_STOPS.length - 1, Math.max(0, at))] ?? TITLE_STOPS[0]
+}

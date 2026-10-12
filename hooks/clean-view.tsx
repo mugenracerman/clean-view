@@ -11,7 +11,10 @@ import {
   fit,
   formatDuration,
   fromTodos,
-  meter,
+  meterCells,
+  overallPercent,
+  stepLabel,
+  titleColor,
   newJob,
   planSteps,
   reportProgress,
@@ -33,6 +36,19 @@ const LABEL_CELLS = 7
 const LINE = '#262B33'
 const MUTED = '#7D8590'
 const TEXT = '#E6EDF3'
+
+// The progress box's colours.
+const PINK = '#E85D9E'
+const GREEN = '#3DD68C'
+const AMBER = '#E3B341'
+const SWEEP = '#6C78D8'
+const FRAME: Record<CleanViewChecklist['phase'], string> = {
+  working: PINK,
+  'needs-you': AMBER,
+  stuck: AMBER,
+  stopped: MUTED,
+  done: GREEN,
+}
 
 const ALWAYS_ALLOWED = new Set([
   'ToolSearch',
@@ -498,19 +514,32 @@ export function registerCleanView(on: On): void {
     const below = await next(e).catch(() => null)
     const width = Math.max(24, e.props.bodyColumns)
 
-    const header = (() => {
+    // The box: a coloured frame, the job's name and time, the overall bar, then the steps.
+    const inner = Math.max(20, width - 4)
+    const elapsed = formatDuration((list.finishedAt ?? now) - list.startedAt)
+    const words = list.title.split(' ')
+
+    const title = (
+      <Text bold>
+        {words.map((word, i) => (
+          <Text color={titleColor(i, words.length)}>{(i === 0 ? '' : ' ') + word}</Text>
+        ))}
+      </Text>
+    )
+
+    const headline = (() => {
       switch (list.phase) {
         case 'working':
           return (
             <Text wrap="truncate-end">
-              <Text bold>{list.title}</Text>
-              <Text dimColor> · {formatDuration(now - list.startedAt)}</Text>
+              <Text color={PINK}>✳ </Text>
+              {title}
             </Text>
           )
         case 'needs-you':
           return (
             <Text wrap="truncate-end">
-              <Text inverse bold color="permission">
+              <Text inverse bold color={AMBER}>
                 {' Needs you '}
               </Text>
               <Text> {list.needsYouReason ?? NEEDS_OK}</Text>
@@ -518,7 +547,7 @@ export function registerCleanView(on: On): void {
           )
         case 'stuck':
           return (
-            <Text wrap="truncate-end" color="warning">
+            <Text wrap="truncate-end" color={AMBER}>
               ⚠ Stuck: {list.stuckReason ?? KEEPS_FAILING}
             </Text>
           )
@@ -526,64 +555,106 @@ export function registerCleanView(on: On): void {
           return (
             <Text wrap="truncate-end">
               <Text bold>■ Stopped</Text>
-              <Text dimColor> · {list.title} · you pressed Esc</Text>
+              <Text color={MUTED}> · {list.title} · you pressed Esc</Text>
             </Text>
           )
         case 'done':
           return (
             <Text wrap="truncate-end">
-              <Text bold color="success">
+              <Text bold color={GREEN}>
                 ✓ All done
               </Text>
-              <Text dimColor>
-                {' '}
-                · {list.title} · took {formatDuration((list.finishedAt ?? now) - list.startedAt)}
-              </Text>
+              <Text color={MUTED}> · {list.title}</Text>
             </Text>
           )
       }
     })()
+    const timeText = list.phase === 'done' ? `took ${elapsed}` : elapsed
+    const header = (
+      <Box flexDirection="row" justifyContent="space-between" width={inner}>
+        <Box flexShrink={1}>{headline}</Box>
+        <Text color={MUTED}>{' ' + timeText}</Text>
+      </Box>
+    )
 
-    const nameWidth = Math.max(6, width - 2 - 2 - 10 - 2 - LABEL_CELLS)
+    // Finished and five seconds old: one line.
+    if (list.phase === 'done' && list.isCollapsed) {
+      return (
+        <Box flexDirection="column" width={width}>
+          <Box paddingX={2} width={width}>
+            {header}
+          </Box>
+          {below}
+        </Box>
+      )
+    }
+
+    const accent = list.phase === 'done' ? GREEN : PINK
+    const percent = overallPercent(list.tasks)
+    const steps = stepLabel(list.tasks)
+    const barWidth = Math.max(4, inner - steps.length - 1 - 5)
+    const filled = Math.round((barWidth * percent) / 100)
+    const overall = (
+      <Text wrap="truncate-end">
+        <Text color={MUTED}>{steps + ' '}</Text>
+        <Text backgroundColor={accent}>{' '.repeat(filled)}</Text>
+        <Text backgroundColor={LINE}>{' '.repeat(barWidth - filled)}</Text>
+        <Text bold color={accent}>
+          {` ${percent}%`.padStart(5)}
+        </Text>
+      </Text>
+    )
+
+    const cells = (lit: boolean[], color: string) =>
+      lit.map(isLit => <Text backgroundColor={isLit ? color : LINE}> </Text>)
+
+    const nameWidth = Math.max(6, Math.min(44, inner - 2 - 2 - 10 - 2 - LABEL_CELLS))
     const firstUpcoming = list.tasks.findIndex(t => t.status === 'upcoming')
     const row = (t: CleanViewTask, i: number) => {
       const name = fit(t.name, nameWidth)
       if (t.status === 'done') {
         return (
           <Text wrap="truncate-end">
-            <Text color="success">✓ </Text>
-            <Text dimColor>{name}</Text>
-            <Text color="success">{'  ' + meter(100)}</Text>
-            <Text dimColor>{'  Done'}</Text>
+            <Text color={GREEN}>✓ </Text>
+            <Text color={MUTED}>{name}</Text>
+            {'  '}
+            {cells(meterCells(100), GREEN)}
+            <Text color={MUTED}>{'  Done'}</Text>
           </Text>
         )
       }
       if (t.status === 'active') {
-        const mark = list.phase === 'needs-you' ? '‖ ' : '▶ '
-        const bar = t.hasReported ? meter(t.percent) : meter(0, frame)
+        const isWaiting = list.phase === 'needs-you'
+        const lit = t.hasReported ? meterCells(t.percent) : meterCells(0, frame)
         return (
           <Text wrap="truncate-end">
-            <Text color="claude">{mark}</Text>
+            <Text color={isWaiting ? AMBER : PINK}>{isWaiting ? '‖ ' : '● '}</Text>
             <Text bold>{name}</Text>
-            <Text color="claude">{'  ' + bar}</Text>
-            <Text>{'  ' + (t.hasReported ? `${t.percent}%` : 'Working')}</Text>
+            {'  '}
+            {cells(lit, t.hasReported ? PINK : SWEEP)}
+            <Text bold color={PINK}>
+              {'  ' + (t.hasReported ? `${t.percent}%` : 'Working')}
+            </Text>
           </Text>
         )
       }
       return (
-        <Text wrap="truncate-end" dimColor>
-          ○ {name}
-          {'  ' + meter(0)}
-          {'  ' + (i === firstUpcoming ? 'Next' : 'Up next')}
+        <Text wrap="truncate-end">
+          <Text color={MUTED}>{'○ ' + name}</Text>
+          {'  '}
+          {cells(meterCells(0), LINE)}
+          <Text color={MUTED}>{'  ' + (i === firstUpcoming ? 'Next' : 'Up next')}</Text>
         </Text>
       )
     }
 
-    const showRows = !(list.phase === 'done' && list.isCollapsed)
     return (
       <Box flexDirection="column" width={width}>
-        <Box width={width}>{header}</Box>
-        {showRows && list.tasks.map(row)}
+        <Box flexDirection="column" borderStyle="round" borderColor={FRAME[list.phase]} paddingX={1} width={width}>
+          {header}
+          {overall}
+          {list.tasks.map(row)}
+        </Box>
         {below}
       </Box>
     )

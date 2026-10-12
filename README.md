@@ -5,11 +5,14 @@ A Claude Code mod that makes Claude Code calm and friendly for people who aren't
 While Claude works, tool calls, file diffs and command output are hidden. Instead, one simple checklist sits above the prompt so you can always see the plan, what's happening now and how far along it is:
 
 ```
-Build my landing page · 1m 12s
-✓ Read your brand notes            ██████████  Done
-▶ Build the pricing section        ██████░░░░  60%
-○ Add the contact form             ░░░░░░░░░░  Next
-○ Polish the footer                ░░░░░░░░░░  Up next
+╭──────────────────────────────────────────────────────────────╮
+│ ✳ Build my landing page                               1m 12s │
+│ Step 2 of 4 ████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░   40% │
+│ ✓ Read your brand notes          ██████████  Done            │
+│ ● Build the pricing section      ██████░░░░  60%             │
+│ ○ Add the contact form           ░░░░░░░░░░  Next            │
+│ ○ Polish the footer              ░░░░░░░░░░  Up next         │
+╰──────────────────────────────────────────────────────────────╯
 ```
 
 The header also tells you when Claude **needs you** (a permission prompt or a question), when it's **stuck**, when you **stopped** it, and when it's **all done**.
