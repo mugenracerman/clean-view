@@ -71,10 +71,10 @@ describe('the checklist band', () => {
 
     for (const surface of ['terminal', 'desktop'] as const) {
       const ui = await $.ui.mount({ ...BAND, surface })
-      expect(await ui.find({ type: 'Text', text: /^✓ Read your brand notes\s+Done$/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^● Build the pricing section\s+60%$/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^○ Add the contact form\s+Next$/ })).toBeDefined()
-      expect(await ui.find({ type: 'Text', text: /^○ Polish the footer\s+Up next$/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^✓ Read your brand notes\s+━{10}\s+Done$/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^● Build the pricing section\s+━{10}\s+60%$/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^○ Add the contact form\s+━{10}\s+Next$/ })).toBeDefined()
+      expect(await ui.find({ type: 'Text', text: /^○ Polish the footer\s+━{10}\s+Up next$/ })).toBeDefined()
       expect(await ui.find({ type: 'Text', text: /^Step 2 of 4\s+40%$/ })).toBeDefined()
       await ui.unmount()
 
@@ -194,9 +194,9 @@ describe('the plan', () => {
     expect(reported.result).toBe('Progress noted: 100%.')
 
     const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-    expect(await ui.find({ type: 'Text', text: /^✓ Read your brand notes\s+Done$/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /^● Build the pricing section\s+Working$/ })).toBeDefined()
-    expect(await ui.find({ type: 'Text', text: /^○ Polish the footer\s+Next$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^✓ Read your brand notes\s+━{10}\s+Done$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^● Build the pricing section\s+━{10}\s+Working$/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^○ Polish the footer\s+━{10}\s+Next$/ })).toBeDefined()
     await ui.unmount()
 
     const clamped = await $.tool.call({ tool: PROGRESS, task: 'Build the pricing section', percent: 250 })
@@ -242,7 +242,7 @@ describe('a job from start to finish', () => {
     const early = await $.ui.mount({ ...BAND, surface: 'terminal' })
     expect(await early.find({ type: 'Text', text: /^● Understand your request/ })).toBeDefined()
     expect(await early.find({ type: 'Text', text: /^○ Plan the steps/ })).toBeDefined()
-    expect(await early.find({ type: 'Text', text: /^✳ Build my landing page$/ })).toBeDefined()
+    expect(await early.find({ type: 'Text', text: /^✦ Build my landing page$/ })).toBeDefined()
     expect(await early.find({ type: 'Text', text: /^ 0s$/ })).toBeDefined()
     await early.unmount()
 

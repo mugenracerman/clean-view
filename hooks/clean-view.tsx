@@ -533,7 +533,7 @@ export function registerCleanView(on: On): void {
         case 'working':
           return (
             <Text wrap="truncate-end">
-              <Text color={PINK}>✳ </Text>
+              <Text color={PINK}>✦ </Text>
               {title}
             </Text>
           )
@@ -607,7 +607,8 @@ export function registerCleanView(on: On): void {
     )
 
     const cells = (lit: boolean[], color: string) =>
-      lit.map(isLit => <Text backgroundColor={isLit ? color : LINE}> </Text>)
+      // Thin bars, so the meters of neighbouring rows don't merge into one block.
+      lit.map(isLit => <Text color={isLit ? color : LINE}>━</Text>)
 
     const nameWidth = Math.max(6, Math.min(44, inner - 2 - 2 - 10 - 2 - LABEL_CELLS))
     const firstUpcoming = list.tasks.findIndex(t => t.status === 'upcoming')

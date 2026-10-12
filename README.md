@@ -10,12 +10,12 @@ The same box, drawn in text:
 
 ```
 ╭──────────────────────────────────────────────────────────────╮
-│ ✳ Build my landing page                               1m 12s │
+│ ✦ Build my landing page                               1m 12s │
 │ Step 2 of 4 ████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░   40% │
-│ ✓ Read your brand notes          ██████████  Done            │
-│ ● Build the pricing section      ██████░░░░  60%             │
-│ ○ Add the contact form           ░░░░░░░░░░  Next            │
-│ ○ Polish the footer              ░░░░░░░░░░  Up next         │
+│ ✓ Read your brand notes          ━━━━━━━━━━  Done            │
+│ ● Build the pricing section      ━━━━━━┄┄┄┄  60%             │
+│ ○ Add the contact form           ┄┄┄┄┄┄┄┄┄┄  Next            │
+│ ○ Polish the footer              ┄┄┄┄┄┄┄┄┄┄  Up next         │
 ╰──────────────────────────────────────────────────────────────╯
 ```
 
