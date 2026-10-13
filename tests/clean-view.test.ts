@@ -23,9 +23,20 @@ const FOOTER = { plugin: 'clean-view', component: 'SessionMode', props: { modes:
 
 const SESSION = { cwd: '.', surface: 'terminal', isInteractive: true } as const
 
-/** What a session answers beneath the plugin: its start, and the tool and command it registers. */
-function session(on: On, stored: Record<string, unknown> = {}) {
-  mock.store(on, stored)
+/**
+ * What a session answers beneath the plugin: its start, and the tool and command it registers.
+ * Given `written`, the store is that object, so a test can read what the plugin saved.
+ */
+function session(on: On, stored: Record<string, unknown> = {}, written?: Record<string, unknown>) {
+  if (written === undefined) mock.store(on, stored)
+  else {
+    Object.assign(written, stored)
+    on('store.get', ($, e) => ({ value: written[e.key] }))
+    on('store.set', ($, e) => {
+      written[e.key] = e.value
+      return { value: undefined }
+    })
+  }
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   on('tool.register', ($, e) => ({ value: { tool: `mcp__clean-view__${e.name}` } }))
   on('command.register', ($, e) => ({ value: { command: e.name } }))
@@ -176,6 +187,26 @@ describe('the checklist band', () => {
     const after = await $.ui.mount({ ...BAND, surface: 'terminal' })
     expect(await after.find({ type: 'Text', text: /Read your brand notes/ })).toBeDefined()
     await after.unmount()
+  })
+
+  test('4c. /clean-view on and off flip it and keep isOn for a dashboard', async ($, on) => {
+    const stored: Record<string, unknown> = {}
+    session(on, {}, stored)
+    await $.session.start(SESSION)
+    expect(stored.isOn).toBe(true)
+    const run = (args: string) =>
+      $.command.run({ command: 'clean-view', args, origin: { kind: 'plugin', name: 'damons-tools' }, presentation: { isFullscreen: false, columns: 100 } })
+
+    await run('off')
+    expect(stored.isOn).toBe(false)
+    expect(stored.cleanViewEnabled).toBe(false)
+    const footer = await $.ui.mount({ ...FOOTER, surface: 'terminal' })
+    expect(await footer.find({ text: /Clean View: Off/ })).toBeDefined()
+    await footer.unmount()
+
+    await run('on')
+    expect(stored.isOn).toBe(true)
+    expect((await run('')).text).toContain('Clean View is on')
   })
 })
 

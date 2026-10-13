@@ -47,6 +47,7 @@ export const PLAN_TOOL = 'mcp__clean-view__plan_steps'
 export const PROGRESS_TOOL = 'mcp__clean-view__report_progress'
 
 const STORE_KEY = 'cleanViewEnabled'
+const SWITCH_KEY = 'isOn'
 const TICK_MS = 250
 const COLLAPSE_MS = 5000
 const FAILS_BEFORE_STUCK = 3
@@ -196,6 +197,8 @@ export function registerCleanView(on: On): void {
     }
     const stored = await $.store.get(STORE_KEY)
     await $.state.set({ plugin: 'clean-view', key: 'cleanViewEnabled' }, stored !== false)
+    // `isOn` is the switch a dashboard reads; it mirrors Clean View's own.
+    await $.store.set(SWITCH_KEY, stored !== false)
     await $.tool.register({
       name: 'plan_steps',
       description:
@@ -235,6 +238,13 @@ export function registerCleanView(on: On): void {
       argumentHint: '[on|off]',
       immediate: true,
     })
+    // The switch under the plugin's own name, which Damon's Tools flips.
+    await $.command.register({
+      name: 'clean-view',
+      description: 'Turn Clean View on or off',
+      argumentHint: 'on | off',
+      immediate: true,
+    })
     await keepTicking(io)
     return next(e)
   })
@@ -252,6 +262,27 @@ export function registerCleanView(on: On): void {
     if (want === null) return { text: 'Use /simple on, /simple off, or just /simple to flip it.' }
     await $.state.set({ plugin: 'clean-view', key: 'cleanViewEnabled' }, want)
     await $.store.set(STORE_KEY, want)
+    await $.store.set(SWITCH_KEY, want)
+    $.ui.toast(toastFor(want))
+    await keepTicking(io)
+    return { text: want ? 'Clean View is on.' : 'Clean View is off. Everything is visible again.' }
+  })
+
+  on('command.run', { command: 'clean-view' }, async ($, e) => {
+    const io: IO = {
+      write: fn => update($, checklist, fn),
+      isLive: async () => (await read($, enabled)) && isLive(await read($, checklist)),
+      every: (ms, fn) => $.clock.every(ms, fn),
+      bump: () => update($, tick, n => n + 1),
+    }
+    const arg = e.args.trim().toLowerCase()
+    if (arg !== 'on' && arg !== 'off') {
+      return { text: `Clean View is ${(await read($, enabled)) ? 'on' : 'off'}. Use /clean-view on or off.` }
+    }
+    const want = arg === 'on'
+    await $.state.set({ plugin: 'clean-view', key: 'cleanViewEnabled' }, want)
+    await $.store.set(STORE_KEY, want)
+    await $.store.set(SWITCH_KEY, want)
     $.ui.toast(toastFor(want))
     await keepTicking(io)
     return { text: want ? 'Clean View is on.' : 'Clean View is off. Everything is visible again.' }
@@ -273,6 +304,7 @@ export function registerCleanView(on: On): void {
       }
       const value = await update($, enabled, one => !one)
       await $.store.set(STORE_KEY, value)
+      await $.store.set(SWITCH_KEY, value)
       $.ui.toast(toastFor(value))
       await keepTicking(io)
     }

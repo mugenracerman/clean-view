@@ -52,7 +52,7 @@ Answer `y` to add the marketplace, then press Enter to install it for your user.
 ## Turn it on and off
 
 - Click the **Clean View: On** toggle in the footer under the prompt. It sits beside the other mods' toggles. Or:
-- type `/simple on`, `/simple off`, or just `/simple` to flip it.
+- type `/simple on`, `/simple off`, or just `/simple` to flip it (`/clean-view on` and `off` do the same, and are what the Damon's Tools toggle uses).
 
 Your choice is remembered after a restart. When it's off, the box goes away and every hidden row comes back.
 
