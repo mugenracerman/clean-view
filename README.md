@@ -76,3 +76,7 @@ Then type `/reload-plugins` in Claude Code, or restart it.
 ```
 claude plugin test .
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE).
