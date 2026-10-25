@@ -1,5 +1,10 @@
 {
   "name": "clean-view",
   "owner": { "name": "mugenracerman" },
-  "plugins": [{ "name": "clean-view", "source": "./" }]
+  "metadata": { "description": "Clean View: a Claude Code mod that hides tool calls, diffs and command output and shows one plain-English checklist above the prompt." },
+  "plugins": [{
+    "name": "clean-view",
+    "source": "./",
+    "description": "Hides tool calls, diffs and command output while Claude works, and shows one plain-English checklist above the prompt instead."
+  }]
 }
